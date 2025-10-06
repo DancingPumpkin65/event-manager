@@ -1,0 +1,204 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum EventStatus {
+  ACTIVE
+  NOT_ACTIVE
+}
+
+enum RegistrationStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+model Admin {
+  id        String   @id @default(uuid())
+  username  String   @unique
+  email     String   @unique
+  password  String
+  firstName String?
+  lastName  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("admins")
+}
+
+model Event {
+  id                String      @id @default(uuid())
+  name              String
+  location          String?
+  startDate         DateTime
+  endDate           DateTime
+  status            EventStatus @default(ACTIVE)
+  participantFields Json?
+  staffFields       Json?
+  courseFields      Json?
+  hallFields        Json?
+  badgeTemplate     Json?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  participants Participant[]
+  courses      Course[]
+  attendance   Attendance[]
+  staff        Staff[]
+  halls        Hall[]
+
+  @@index([status])
+  @@index([startDate])
+
+  @@map("events")
+}
+
+model Hall {
+  id         String   @id @default(uuid())
+  eventId    String
+  hallFields Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  event       Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  courseHalls CourseHall[]
+  attendance  Attendance[]
+
+  @@index([eventId])
+
+  @@map("salles")
+}
+
+model Staff {
+  id             String   @id @default(uuid())
+  eventId        String
+  staffFields    Json
+  username       String
+  password       String
+  badgeId        String?  @unique
+  badgePrintedAt DateTime?
+  badgePrintedBy String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  scannedAttendances Attendance[]
+
+  @@unique([eventId, username])
+  @@index([eventId])
+  @@index([badgeId])
+  @@index([username])
+
+  @@map("staff")
+}
+
+model Participant {
+  id                String             @id @default(uuid())
+  eventId           String
+  participantFields Json
+  status            RegistrationStatus @default(PENDING)
+  badgeId           String?            @unique
+  badgePrintedAt    DateTime?
+  badgePrintedBy    String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  event      Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  attendance Attendance[]
+  registrations CourseRegistration[]
+
+  @@index([eventId])
+  @@index([badgeId])
+
+  @@map("participants")
+}
+
+model Course {
+  id           String   @id @default(uuid())
+  eventId      String
+  startDate    DateTime
+  endDate      DateTime
+  courseFields Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  event      Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  halls      CourseHall[]
+  attendance Attendance[]
+  registrations CourseRegistration[]
+
+  requiresRegistration Boolean @default(false)
+
+  @@index([eventId])
+  @@index([startDate])
+
+  @@map("courses")
+}
+
+model CourseRegistration {
+  id            String   @id @default(uuid())
+  participantId String
+  courseId      String
+  status        RegistrationStatus @default(CONFIRMED)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  participant Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  course       Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([participantId, courseId])
+  @@index([participantId])
+  @@index([courseId])
+
+  @@map("course_registrations")
+}
+
+model CourseHall {
+  id        String   @id @default(uuid())
+  courseId  String
+  hallId    String
+  createdAt DateTime @default(now())
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  hall   Hall   @relation(fields: [hallId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, hallId])
+  @@index([courseId])
+  @@index([hallId])
+
+  @@map("course_halls")
+}
+
+model Attendance {
+  id               String   @id @default(uuid())
+  participantId    String
+  eventId          String
+  hallId           String?
+  courseId         String?
+  checkInTime      DateTime @default(now())
+  checkOutTime     DateTime?
+  scannedByStaffId String?  
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  participant Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  event       Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  hall        Hall?       @relation(fields: [hallId], references: [id], onDelete: SetNull)
+  course      Course?     @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  scannedBy   Staff?      @relation(fields: [scannedByStaffId], references: [id])
+
+  @@unique([participantId, courseId])
+  @@index([participantId])
+  @@index([eventId])
+  @@index([hallId])
+  @@index([courseId])
+  @@index([checkInTime])
+
+  @@map("attendance")
+}

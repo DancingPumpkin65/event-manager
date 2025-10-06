@@ -1,0 +1,28 @@
+FROM node:18-alpine
+
+# Install OpenSSL for Prisma
+RUN apk add --no-cache openssl
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies (including dev for nodemon)
+RUN npm install
+
+# Copy prisma schema (will be overridden by volume mount, but needed for initial build)
+COPY prisma ./prisma
+
+# Copy source code
+COPY . .
+
+# Remove local .env to ensure Docker env vars take precedence
+RUN rm -f .env
+
+# Expose port
+EXPOSE 3000
+
+# Generate Prisma client and start development server
+CMD ["sh", "-c", "npx prisma generate && npm run dev"]
+
