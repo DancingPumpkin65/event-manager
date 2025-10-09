@@ -6,15 +6,16 @@ import { config } from './config';
 import { errorHandler } from './middleware/error.middleware';
 import prisma from './config/database';
 import authRoutes from './modules/auth/auth.routes';
+import adminRoutes from './modules/admin/admin.routes';
+import staffRoutes from './modules/staff/staff.routes';
 import eventsRoutes from './modules/events/events.routes';
 import participantsRoutes from './modules/participants/participants.routes';
+import badgesRoutes from './modules/badges/badges.routes';
 import sallesRoutes from './modules/salles/salles.routes';
 import coursesRoutes from './modules/courses/courses.routes';
 import attendanceRoutes from './modules/attendance/attendance.routes';
-import badgesRoutes from './modules/badges/badges.routes';
-import adminRoutes from './modules/admin/admin.routes';
-import staffRoutes from './modules/staff/staff.routes';
 import eventStatsRoutes from './modules/event-stats/event-stats.routes';
+
 const app: Express = express();
 
 // Middleware
