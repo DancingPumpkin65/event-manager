@@ -1,0 +1,225 @@
+### Salles API Testing
+### Base URL
+@baseUrl = http://localhost:3000/api
+@accessToken = your-jwt-token-here
+
+### Variables will be set from responses
+# After login, copy the accessToken value here
+
+################################################################################
+# 1. GET ALL SALLES (Public)
+################################################################################
+
+### Get all salles - no auth required
+GET {{baseUrl}}/salles
+Content-Type: application/json
+
+### Get salles with pagination
+GET {{baseUrl}}/salles?page=1&limit=10
+Content-Type: application/json
+
+### Get salles by event
+GET {{baseUrl}}/salles?eventId=replace-with-event-id
+Content-Type: application/json
+
+################################################################################
+# 2. GET SINGLE SALLE (Public)
+################################################################################
+
+### Get salle by ID (replace with actual ID)
+GET {{baseUrl}}/salles/123e4567-e89b-12d3-a456-426614174000
+Content-Type: application/json
+
+### Get salles by Event ID (IMPORTANT - Use this in frontend)
+GET {{baseUrl}}/salles/event/{eventId}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+### Get non-existent salle (should return 404)
+GET {{baseUrl}}/salles/00000000-0000-0000-0000-000000000000
+Content-Type: application/json
+
+################################################################################
+# 3. CREATE SALLE (Protected - ADMIN/ORGANIZER)
+################################################################################
+
+### Create salle - Valid (requires auth token)
+# Note: name is stored in hallFields, define hallFields schema in event
+POST {{baseUrl}}/salles
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "eventId": "replace-with-event-uuid",
+  "hallFields": {
+    "name": "Conference Room A",
+    "capacity": 50,
+    "location": "Building 1, Floor 2",
+    "equipment": ["projector", "whiteboard", "microphone", "wifi"]
+  }
+}
+
+### Create salle - With minimal info
+POST {{baseUrl}}/salles
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "eventId": "replace-with-event-uuid",
+  "hallFields": {
+    "name": "Meeting Room B",
+    "capacity": 20
+  }
+}
+
+### Create salle - Missing eventId (should fail)
+POST {{baseUrl}}/salles
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "hallFields": {
+    "name": "Invalid Room"
+  }
+}
+
+### Create salle - Without authentication (should return 401)
+POST {{baseUrl}}/salles
+Content-Type: application/json
+
+{
+  "eventId": "replace-with-event-uuid",
+  "hallFields": {
+    "name": "Unauthorized Room",
+    "capacity": 15
+  }
+}
+
+################################################################################
+# 4. UPDATE SALLE (Protected - ADMIN/ORGANIZER)
+################################################################################
+
+### Update salle - Valid (replace with actual ID)
+PATCH {{baseUrl}}/salles/123e4567-e89b-12d3-a456-426614174000
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "hallFields": {
+    "name": "Conference Room A - Updated",
+    "capacity": 60,
+    "location": "Building 1, Floor 3",
+    "equipment": ["projector", "whiteboard", "microphone", "wifi", "video-conference"]
+  }
+}
+
+### Update salle - Partial update (capacity only)
+PATCH {{baseUrl}}/salles/123e4567-e89b-12d3-a456-426614174000
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "hallFields": {
+    "capacity": 55
+  }
+}
+
+### Update salle - Without authentication (should return 401)
+PATCH {{baseUrl}}/salles/123e4567-e89b-12d3-a456-426614174000
+Content-Type: application/json
+
+{
+  "hallFields": {
+    "capacity": 100
+  }
+}
+
+### Update non-existent salle (should return 404)
+PATCH {{baseUrl}}/salles/00000000-0000-0000-0000-000000000000
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "hallFields": {
+    "capacity": 30
+  }
+}
+
+################################################################################
+# 5. DELETE SALLE (Protected - ADMIN/ORGANIZER)
+################################################################################
+
+### Delete salle (replace with actual ID)
+DELETE {{baseUrl}}/salles/123e4567-e89b-12d3-a456-426614174000
+Authorization: Bearer {{accessToken}}
+
+### Delete salle - Without authentication (should return 401)
+DELETE {{baseUrl}}/salles/123e4567-e89b-12d3-a456-426614174000
+
+### Delete non-existent salle (should return 404)
+DELETE {{baseUrl}}/salles/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{accessToken}}
+
+################################################################################
+# WORKFLOW EXAMPLE
+################################################################################
+
+### Step 1: Login as ADMIN/ORGANIZER
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "your-password"
+}
+
+### Step 2: Create a new salle
+POST {{baseUrl}}/salles
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "eventId": "replace-with-event-id",
+  "hallFields": {
+    "name": "Main Conference Hall",
+    "capacity": 200,
+    "location": "Main Building, Ground Floor",
+    "equipment": ["stage", "projector", "sound-system", "lighting", "wifi"]
+  }
+}
+
+### Step 3: Get all salles for event
+GET {{baseUrl}}/salles/event/replace-with-event-id
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+### Step 4: Update salle capacity
+PATCH {{baseUrl}}/salles/salle-id-from-step2
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "hallFields": {
+    "capacity": 250
+  }
+}
+
+################################################################################
+# NOTES
+################################################################################
+
+# Before testing protected routes:
+# 1. Create an account using POST /api/auth/register
+# 2. Login using POST /api/auth/login to get access token
+# 3. Replace {{accessToken}} variable at the top with your actual token
+
+# Hall Fields (stored in hallFields JSON):
+# - name: Name of the hall (define in event's hallFields schema)
+# - capacity: Maximum number of people
+# - location: Physical location description
+# - equipment: Array of available equipment
+
+# Business Rules:
+# - All hall data (including name) is stored in hallFields JSON
+# - Define which fields are required in event.hallFields schema
+# - Cannot delete salle if it has associated courses or attendance

@@ -1,0 +1,285 @@
+### Courses API Testing
+### Base URL
+@baseUrl = http://localhost:3000/api
+@accessToken = your-jwt-token-here
+
+### Variables will be set from responses
+# After login, copy the accessToken value here
+
+################################################################################
+# 1. GET ALL COURSES (Public)
+################################################################################
+
+### Get all courses - no auth required
+GET {{baseUrl}}/courses
+Content-Type: application/json
+
+### Get courses with pagination
+GET {{baseUrl}}/courses?page=1&limit=10
+Content-Type: application/json
+
+### Get courses by event
+GET {{baseUrl}}/courses?eventId=replace-with-event-id
+Content-Type: application/json
+
+### Get courses with sorting
+GET {{baseUrl}}/courses?sortBy=startDate&order=asc
+Content-Type: application/json
+
+################################################################################
+# 2. GET SINGLE COURSE (Public)
+################################################################################
+
+### Get course by ID (replace with actual ID)
+GET {{baseUrl}}/courses/123e4567-e89b-12d3-a456-426614174000
+Content-Type: application/json
+
+### Get non-existent course (should return 404)
+GET {{baseUrl}}/courses/00000000-0000-0000-0000-000000000000
+Content-Type: application/json
+
+################################################################################
+# 3. CREATE COURSE (Protected - ADMIN/ORGANIZER)
+################################################################################
+
+### Create course - Valid (requires auth token)
+# Note: name is stored in courseFields, define courseFields schema in event
+POST {{baseUrl}}/courses
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "eventId": "replace-with-event-id",
+  "startDate": "2025-12-25T10:00:00.000Z",
+  "endDate": "2025-12-25T12:00:00.000Z",
+  "courseFields": {
+    "name": "Introduction to Python Programming",
+    "description": "Learn the basics of Python programming language",
+    "instructor": "Dr. John Smith",
+    "maxSeats": 30
+  },
+  "hallIds": []
+}
+
+### Create course - With minimal info
+POST {{baseUrl}}/courses
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "eventId": "replace-with-event-id",
+  "startDate": "2025-12-26T09:00:00.000Z",
+  "endDate": "2025-12-26T11:00:00.000Z",
+  "courseFields": {
+    "name": "JavaScript Fundamentals"
+  },
+  "hallIds": []
+}
+
+### Create course - With hall assignments
+POST {{baseUrl}}/courses
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "eventId": "replace-with-event-id",
+  "startDate": "2025-12-27T14:00:00.000Z",
+  "endDate": "2025-12-27T17:00:00.000Z",
+  "courseFields": {
+    "name": "Web Development Basics",
+    "description": "HTML, CSS, and JavaScript",
+    "instructor": "Jane Doe",
+    "maxSeats": 25
+  },
+  "hallIds": ["hall-uuid-1", "hall-uuid-2"]
+}
+
+### Create course - Missing required fields (should fail)
+POST {{baseUrl}}/courses
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "courseFields": {
+    "name": "Missing Event ID"
+  }
+}
+
+### Create course - Invalid event ID (should return 404)
+POST {{baseUrl}}/courses
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "eventId": "00000000-0000-0000-0000-000000000000",
+  "startDate": "2025-12-28T10:00:00.000Z",
+  "endDate": "2025-12-28T12:00:00.000Z",
+  "courseFields": {
+    "name": "Invalid Course"
+  },
+  "hallIds": []
+}
+
+### Create course - Without authentication (should return 401)
+POST {{baseUrl}}/courses
+Content-Type: application/json
+
+{
+  "eventId": "replace-with-event-id",
+  "startDate": "2025-12-29T10:00:00.000Z",
+  "endDate": "2025-12-29T12:00:00.000Z",
+  "courseFields": {
+    "name": "Unauthorized Course"
+  },
+  "hallIds": []
+}
+
+################################################################################
+# 4. UPDATE COURSE (Protected - ADMIN/ORGANIZER)
+################################################################################
+
+### Update course - Valid (replace with actual ID)
+PATCH {{baseUrl}}/courses/123e4567-e89b-12d3-a456-426614174000
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "courseFields": {
+    "name": "Advanced Python Programming",
+    "description": "Deep dive into Python advanced concepts",
+    "instructor": "Dr. John Smith, PhD",
+    "maxSeats": 35
+  }
+}
+
+### Update course - Change schedule
+PATCH {{baseUrl}}/courses/123e4567-e89b-12d3-a456-426614174000
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "startDate": "2025-12-26T09:00:00.000Z",
+  "endDate": "2025-12-26T12:00:00.000Z"
+}
+
+### Update course - Change hall assignments
+PATCH {{baseUrl}}/courses/123e4567-e89b-12d3-a456-426614174000
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "hallIds": ["new-hall-uuid"]
+}
+
+### Update course - Without authentication (should return 401)
+PATCH {{baseUrl}}/courses/123e4567-e89b-12d3-a456-426614174000
+Content-Type: application/json
+
+{
+  "courseFields": {
+    "name": "Unauthorized Update"
+  }
+}
+
+### Update non-existent course (should return 404)
+PATCH {{baseUrl}}/courses/00000000-0000-0000-0000-000000000000
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "courseFields": {
+    "name": "Non-existent Course"
+  }
+}
+
+################################################################################
+# 5. DELETE COURSE (Protected - ADMIN/ORGANIZER)
+################################################################################
+
+### Delete course (replace with actual ID)
+DELETE {{baseUrl}}/courses/123e4567-e89b-12d3-a456-426614174000
+Authorization: Bearer {{accessToken}}
+
+### Delete course - Without authentication (should return 401)
+DELETE {{baseUrl}}/courses/123e4567-e89b-12d3-a456-426614174000
+
+### Delete non-existent course (should return 404)
+DELETE {{baseUrl}}/courses/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{accessToken}}
+
+################################################################################
+# WORKFLOW EXAMPLE
+################################################################################
+
+### Step 1: Login as ADMIN/ORGANIZER
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "your-password"
+}
+
+### Step 2: Get or create an event first
+GET {{baseUrl}}/events?limit=1
+Content-Type: application/json
+
+### Step 3: Create a course for the event
+POST {{baseUrl}}/courses
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "eventId": "event-id-from-step2",
+  "startDate": "2025-12-28T10:00:00.000Z",
+  "endDate": "2025-12-28T16:00:00.000Z",
+  "courseFields": {
+    "name": "Machine Learning Workshop",
+    "description": "Introduction to ML concepts and practical applications",
+    "instructor": "Dr. AI Expert",
+    "maxSeats": 50
+  },
+  "hallIds": []
+}
+
+### Step 4: Get all courses for the event
+GET {{baseUrl}}/courses?eventId=event-id-from-step2
+Content-Type: application/json
+
+### Step 5: Update course details
+PATCH {{baseUrl}}/courses/course-id-from-step3
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "courseFields": {
+    "description": "Hands-on workshop covering supervised and unsupervised learning",
+    "maxSeats": 60
+  }
+}
+
+### Step 6: Get updated course details
+GET {{baseUrl}}/courses/course-id-from-step3
+Content-Type: application/json
+
+################################################################################
+# NOTES
+################################################################################
+
+# Before testing protected routes:
+# 1. Create an account using POST /api/auth/register
+# 2. Login using POST /api/auth/login to get access token
+# 3. Replace {{accessToken}} variable at the top with your actual token
+
+# Course Fields (stored in courseFields JSON):
+# - name: Course name (define in event's courseFields schema)
+# - description: Detailed description
+# - instructor: Instructor name
+# - maxSeats: Maximum number of participants
+
+# Business Rules:
+# - All course data (except dates) is stored in courseFields JSON
+# - Define which fields are required in event.courseFields schema
+# - startDate and endDate are required fields
+# - Courses can be assigned to multiple halls via hallIds
+# - Courses are automatically deleted when parent event is deleted

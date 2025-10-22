@@ -1,0 +1,219 @@
+### Badges API Testing
+### Base URL
+@baseUrl = http://localhost:3000/api
+@accessToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Ijk2MjU0ZDFkLWZmMWQtNDQyZi1iODgwLTFlYTAyZDgyODU0NSIsImVtYWlsIjoidGVzdDJAZXhhbXBsZS5jb20iLCJyb2xlIjoiQURNSU4iLCJpYXQiOjE3NjYzNTE0OTd9.vYtFWa5wmSDw4divu5uyy2Lb9Qvho8A-10koX_GLBTU
+
+### Variables will be set from responses
+# After login, copy the accessToken value here
+
+################################################################################
+# 1. GET ALL BADGES (Public)
+################################################################################
+
+### Get all badges - no auth required
+GET {{baseUrl}}/badges
+Content-Type: application/json
+
+### Get badges with pagination
+GET {{baseUrl}}/badges?page=1&limit=10
+Content-Type: application/json
+
+### Get badges by participant
+GET {{baseUrl}}/badges?participantId=replace-with-participant-id
+Content-Type: application/json
+
+### Get badges by event
+GET {{baseUrl}}/badges?eventId=replace-with-event-id
+Content-Type: application/json
+
+### Get only printed badges
+GET {{baseUrl}}/badges?printed=true
+Content-Type: application/json
+
+### Get only unprinted badges
+GET {{baseUrl}}/badges?printed=false
+Content-Type: application/json
+
+### Get badges with sorting
+GET {{baseUrl}}/badges?sortBy=createdAt&order=desc
+Content-Type: application/json
+
+################################################################################
+# 2. GET SINGLE BADGE (Public)
+################################################################################
+
+### Get badge by ID (replace with actual ID)
+GET {{baseUrl}}/badges/123e4567-e89b-12d3-a456-426614174000
+Content-Type: application/json
+
+### Get non-existent badge (should return 404)
+GET {{baseUrl}}/badges/00000000-0000-0000-0000-000000000000
+Content-Type: application/json
+
+################################################################################
+# 3. GENERATE BADGE (Protected - ADMIN/ORGANIZER)
+################################################################################
+
+### Generate badge - Valid (requires auth token)
+POST {{baseUrl}}/badges/generate
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "participantId": "replace-with-participant-id"
+}
+
+### Generate badge - For staff
+POST {{baseUrl}}/badges/generate
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "staffId": "replace-with-staff-id"
+}
+
+### Generate badge - Missing both IDs (should fail validation)
+POST {{baseUrl}}/badges/generate
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+}
+
+### Generate badge - With both IDs (should fail - only one allowed)
+POST {{baseUrl}}/badges/generate
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "participantId": "replace-with-participant-id",
+  "staffId": "replace-with-staff-id"
+}
+
+### Generate badge - Invalid participant ID (should return 404)
+POST {{baseUrl}}/badges/generate
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "participantId": "00000000-0000-0000-0000-000000000000"
+}
+
+### Generate badge - Without authentication (should return 401)
+POST {{baseUrl}}/badges/generate
+Content-Type: application/json
+
+{
+  "participantId": "replace-with-participant-id"
+}
+
+### Generate badge - Duplicate (already has badge - should return 409)
+POST {{baseUrl}}/badges/generate
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "participantId": "replace-with-existing-badge-participant-id"
+}
+
+################################################################################
+# 4. MARK BADGE AS PRINTED (Protected - ADMIN/ORGANIZER)
+################################################################################
+
+### Mark badge as printed (replace with actual participant or staff ID)
+PATCH {{baseUrl}}/badges/123e4567-e89b-12d3-a456-426614174000/print
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "printedBy": "admin@example.com"
+}
+
+### Mark badge as printed - Without authentication (should return 401)
+PATCH {{baseUrl}}/badges/123e4567-e89b-12d3-a456-426614174000/print
+
+### Mark non-existent badge as printed (should return 404)
+PATCH {{baseUrl}}/badges/00000000-0000-0000-0000-000000000000/print
+Authorization: Bearer {{accessToken}}
+
+################################################################################
+# 5. DELETE BADGE (Protected - ADMIN/ORGANIZER)
+################################################################################
+
+### Delete badge (replace with actual ID)
+DELETE {{baseUrl}}/badges/123e4567-e89b-12d3-a456-426614174000
+Authorization: Bearer {{accessToken}}
+
+### Delete badge - Without authentication (should return 401)
+DELETE {{baseUrl}}/badges/123e4567-e89b-12d3-a456-426614174000
+
+### Delete non-existent badge (should return 404)
+DELETE {{baseUrl}}/badges/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{accessToken}}
+
+################################################################################
+# WORKFLOW EXAMPLE
+################################################################################
+
+### Step 1: Login as ADMIN/ORGANIZER
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "your-password"
+}
+
+### Step 2: Get a participant ID
+GET {{baseUrl}}/participants?limit=1
+Content-Type: application/json
+
+### Step 3: Generate badge for participant
+POST {{baseUrl}}/badges/generate
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "participantId": "participant-id-from-step-2"
+}
+
+### Step 4: Get the generated badge
+GET {{baseUrl}}/badges?participantId=participant-id-from-step-2
+Content-Type: application/json
+
+### Step 5: Mark badge as printed
+PATCH {{baseUrl}}/badges/badge-id-from-step-4/print
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "printedBy": "admin@example.com"
+}
+
+### Step 6: Verify badge is marked as printed
+GET {{baseUrl}}/badges/badge-id-from-step-4
+Content-Type: application/json
+
+################################################################################
+# NOTES
+################################################################################
+
+# Before testing protected routes:
+# 1. Create an account using POST /api/auth/register
+# 2. Login using POST /api/auth/login to get access token
+# 3. Replace {{accessToken}} variable at the top with your actual token
+
+# Badge Templates:
+# - standard: Regular participant badge
+# - vip: VIP attendee badge
+# - staff: Event staff badge
+
+# QR Code:
+# - Each badge contains a QR code generated from the participant ID
+# - QR codes are unique and can be used for check-in/verification
+
+# Workflow:
+# 1. Register participants for an event
+# 2. Generate badges for participants
+# 3. Mark badges as printed when physical badges are created
+# 4. Use QR codes for event check-in

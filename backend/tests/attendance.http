@@ -1,0 +1,326 @@
+### Attendance API Testing
+### Base URL
+@baseUrl = http://localhost:3000/api
+@accessToken = your-jwt-token-here
+
+### Variables will be set from responses
+# After login, copy the accessToken value here
+
+################################################################################
+# 1. GET ALL ATTENDANCE RECORDS (Public)
+################################################################################
+
+### Get all attendance records - no auth required
+GET {{baseUrl}}/attendance
+Content-Type: application/json
+
+### Get attendance with pagination
+GET {{baseUrl}}/attendance?page=1&limit=10
+Content-Type: application/json
+
+### Get attendance by event
+GET {{baseUrl}}/attendance?eventId=replace-with-event-id
+Content-Type: application/json
+
+### Get attendance by participant
+GET {{baseUrl}}/attendance?participantId=replace-with-participant-id
+Content-Type: application/json
+
+### Get attendance with sorting
+GET {{baseUrl}}/attendance?sortBy=checkInTime&order=desc
+Content-Type: application/json
+
+### Get attendance with multiple filters
+GET {{baseUrl}}/attendance?eventId=replace-with-event-id&page=1&limit=20
+Content-Type: application/json
+
+################################################################################
+# 2. CHECK-IN PARTICIPANT (Protected - ADMIN/ORGANIZER)
+################################################################################
+
+### Check-in participant - Valid (requires auth token)
+POST {{baseUrl}}/attendance/check-in
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "participantId": "replace-with-participant-id",
+  "eventId": "replace-with-event-id",
+  "hallId": "replace-with-hall-id"
+}
+
+### Check-in participant - Missing participantId (should fail)
+POST {{baseUrl}}/attendance/check-in
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "eventId": "replace-with-event-id"
+}
+
+### Check-in participant - Missing eventId (should fail)
+POST {{baseUrl}}/attendance/check-in
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "participantId": "replace-with-participant-id"
+}
+
+### Check-in participant - Invalid participant ID (should return 404)
+POST {{baseUrl}}/attendance/check-in
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "participantId": "00000000-0000-0000-0000-000000000000",
+  "eventId": "replace-with-event-id",
+  "hallId": "replace-with-hall-id"
+}
+
+### Check-in participant - Not registered for event (should fail)
+POST {{baseUrl}}/attendance/check-in
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "participantId": "participant-not-in-event",
+  "eventId": "replace-with-event-id",
+  "hallId": "replace-with-hall-id"
+}
+
+### Check-in participant - Already checked in (should fail)
+POST {{baseUrl}}/attendance/check-in
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "participantId": "already-checked-in-participant-id",
+  "eventId": "replace-with-event-id",
+  "hallId": "replace-with-hall-id"
+}
+
+### Check-in participant - Without authentication (should return 401)
+POST {{baseUrl}}/attendance/check-in
+Content-Type: application/json
+
+{
+  "participantId": "replace-with-participant-id",
+  "eventId": "replace-with-event-id",
+  "hallId": "replace-with-hall-id"
+}
+
+################################################################################
+# 3. CHECK-OUT PARTICIPANT (Protected - ADMIN/ORGANIZER)
+################################################################################
+
+### Check-out participant - Valid (requires auth token)
+POST {{baseUrl}}/attendance/check-out
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "participantId": "replace-with-participant-id",
+  "eventId": "replace-with-event-id",
+  "hallId": "replace-with-hall-id"
+}
+
+### Check-out participant - Missing participantId (should fail)
+POST {{baseUrl}}/attendance/check-out
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "eventId": "replace-with-event-id"
+}
+
+### Check-out participant - Not checked in (should fail)
+POST {{baseUrl}}/attendance/check-out
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "participantId": "not-checked-in-participant-id",
+  "eventId": "replace-with-event-id",
+  "hallId": "replace-with-hall-id"
+}
+
+### Check-out participant - Already checked out (should fail)
+POST {{baseUrl}}/attendance/check-out
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "participantId": "already-checked-out-participant-id",
+  "eventId": "replace-with-event-id",
+  "hallId": "replace-with-hall-id"
+}
+
+### Check-out participant - Without authentication (should return 401)
+POST {{baseUrl}}/attendance/check-out
+Content-Type: application/json
+
+{
+  "participantId": "replace-with-participant-id",
+  "eventId": "replace-with-event-id"
+}
+
+################################################################################
+# 4. GET EVENT ATTENDANCE STATISTICS (Public)
+################################################################################
+
+### Get attendance stats for event
+GET {{baseUrl}}/attendance/events/replace-with-event-id/stats
+Content-Type: application/json
+
+### Get stats for non-existent event (should return 404)
+GET {{baseUrl}}/attendance/events/00000000-0000-0000-0000-000000000000/stats
+Content-Type: application/json
+
+################################################################################
+# WORKFLOW EXAMPLE
+################################################################################
+
+### Step 1: Login as ADMIN/ORGANIZER
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "your-password"
+}
+
+### Step 2: Get event ID
+GET {{baseUrl}}/events?limit=1
+Content-Type: application/json
+
+### Step 3: Get participants for the event
+GET {{baseUrl}}/participants?eventId=event-id-from-step2&limit=5
+Content-Type: application/json
+
+### Step 4: Check-in first participant
+POST {{baseUrl}}/attendance/check-in
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "participantId": "participant-id-from-step3",
+  "eventId": "event-id-from-step2"
+}
+
+### Step 5: Get all attendance for the event
+GET {{baseUrl}}/attendance?eventId=event-id-from-step2
+Content-Type: application/json
+
+### Step 6: Get attendance statistics
+GET {{baseUrl}}/attendance/events/event-id-from-step2/stats
+Content-Type: application/json
+
+### Step 7: Check-out participant after event
+POST {{baseUrl}}/attendance/check-out
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "participantId": "participant-id-from-step3",
+  "eventId": "event-id-from-step2"
+}
+
+### Step 8: Verify updated statistics
+GET {{baseUrl}}/attendance/events/event-id-from-step2/stats
+Content-Type: application/json
+
+################################################################################
+# BARCODE SCANNING WORKFLOW
+################################################################################
+
+### Scenario: Using badges for check-in
+
+### Step 1: Scan Badge (New Endpoint)
+POST {{baseUrl}}/attendance/scan
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "badgeId": "replace-with-badge-id",
+  "eventId": "current-event-id",
+  "courseId": "current-course-id",
+  "hallId": "optional-hall-id"
+}
+
+### Step 2: Get participant badge
+GET {{baseUrl}}/badges?participantId=replace-with-participant-id
+Content-Type: application/json
+
+### Step 2: Check-in using participant ID from badge QR code
+POST {{baseUrl}}/attendance/check-in
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "participantId": "participant-id-from-qr-code",
+  "eventId": "current-event-id"
+}
+
+### Step 3: Verify check-in
+GET {{baseUrl}}/attendance?participantId=participant-id-from-qr-code
+Content-Type: application/json
+
+################################################################################
+# NOTES
+################################################################################
+
+# Before testing protected routes:
+# 1. Create an account using POST /api/auth/register
+# 2. Login using POST /api/auth/login to get access token
+# 3. Replace {{accessToken}} variable at the top with your actual token
+
+# Attendance Fields:
+# - participantId (required): UUID of the participant
+# - eventId (required): UUID of the event
+# - checkInTime: Automatically set when checking in
+# - checkOutTime: Automatically set when checking out
+
+# Business Rules:
+# - Participant must be registered for the event before check-in
+# - Cannot check-in twice without checking out first
+# - Cannot check-out without checking in first
+# - Cannot check-out twice
+# - Check-in time is recorded automatically
+# - Check-out time is recorded automatically
+
+# Statistics Response:
+# {
+#   "totalRegistered": 100,      // Total participants registered
+#   "checkedIn": 85,              // Participants who checked in
+#   "checkedOut": 70,             // Participants who checked out
+#   "notCheckedIn": 15,           // Registered but not checked in
+#   "attendanceRate": 85.00       // Percentage (checkedIn / totalRegistered)
+# }
+
+# Response Format:
+# - Attendance records include participant details (id, firstName, lastName, email)
+# - Include event details (id, title)
+# - Timestamps in ISO 8601 format
+# - Pagination info: total, page, limit, totalPages
+
+# Use Cases:
+# - Event attendance tracking
+# - Badge scanning at entrance/exit
+# - Real-time attendance monitoring
+# - Post-event attendance reports
+# - Participant flow management
+
+# Integration with Badges:
+# - Generate badge first for participant
+# - Badge contains QR code with participant ID
+# - Scan QR code to get participant ID
+# - Use participant ID for check-in/check-out
+# - Badge QR code format: participant UUID
+
+# Best Practices:
+# - Check-in participants as they arrive
+# - Check-out participants as they leave (optional)
+# - Monitor statistics in real-time
+# - Use badges for quick scanning
+# - Export attendance data after event

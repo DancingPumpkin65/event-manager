@@ -1,0 +1,348 @@
+### Participants API Testing
+### Base URL
+@baseUrl = http://localhost:3000/api
+@accessToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Ijk2MjU0ZDFkLWZmMWQtNDQyZi1iODgwLTFlYTAyZDgyODU0NSIsImVtYWlsIjoidGVzdDJAZXhhbXBsZS5jb20iLCJyb2xlIjoiQURNSU4iLCJpYXQiOjE3NjYzNTE0OTd9.vYtFWa5wmSDw4divu5uyy2Lb9Qvho8A-10koX_GLBTU
+
+### Variables will be set from responses
+# After login, copy the accessToken value here
+
+################################################################################
+# 1. GET ALL PARTICIPANTS (Public)
+################################################################################
+
+### Get all participants - no auth required
+GET {{baseUrl}}/participants
+Content-Type: application/json
+
+### Get participants with pagination
+GET {{baseUrl}}/participants?page=1&limit=10
+Content-Type: application/json
+
+### Get participants with event filter
+GET {{baseUrl}}/participants?eventId=replace-with-event-id
+Content-Type: application/json
+
+### Get participants with status filter
+GET {{baseUrl}}/participants?status=CONFIRMED
+Content-Type: application/json
+
+### Get participants with search
+GET {{baseUrl}}/participants?search=john
+Content-Type: application/json
+
+### Get participants with sorting
+GET {{baseUrl}}/participants?sortBy=lastName&order=asc
+Content-Type: application/json
+
+### Get participants with multiple filters
+GET {{baseUrl}}/participants?eventId=replace-with-event-id&status=CONFIRMED&page=1&limit=5
+Content-Type: application/json
+
+################################################################################
+# 2. GET EVENT PARTICIPANTS (Public)
+################################################################################
+
+### Get all participants for a specific event
+GET {{baseUrl}}/events/replace-with-event-id/participants
+Content-Type: application/json
+
+################################################################################
+# 3. GET SINGLE PARTICIPANT (Public)
+################################################################################
+
+### Get participant by ID (replace with actual ID)
+GET {{baseUrl}}/participants/123e4567-e89b-12d3-a456-426614174000
+Content-Type: application/json
+
+### Get non-existent participant (should return 404)
+GET {{baseUrl}}/participants/00000000-0000-0000-0000-000000000000
+Content-Type: application/json
+
+################################################################################
+# 4. CREATE PARTICIPANT (Protected - ADMIN/ORGANIZER)
+################################################################################
+
+### Create new participant - Valid (requires auth token)
+POST {{baseUrl}}/participants
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "eventId": "replace-with-event-id",
+  "participantFields": {
+    "firstName": "John",
+    "lastName": "Doe",
+    "email": "john.doe@example.com",
+    "phone": "+1234567890",
+    "organization": "Tech Corp",
+    "position": "Software Engineer",
+    "dietary": "vegetarian",
+    "tshirtSize": "L"
+  },
+  "status": "CONFIRMED"
+}
+
+### Create participant - Missing required fields
+POST {{baseUrl}}/participants
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "eventId": "replace-with-event-id",
+  "participantFields": {
+    "firstName": "Jane"
+  }
+}
+
+### Create participant - Invalid email
+POST {{baseUrl}}/participants
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "eventId": "replace-with-event-id",
+  "participantFields": {
+    "firstName": "Invalid",
+    "lastName": "Email",
+    "email": "not-an-email"
+  }
+}
+
+### Create participant - Without authentication (should return 401)
+POST {{baseUrl}}/participants
+Content-Type: application/json
+
+{
+  "eventId": "replace-with-event-id",
+  "participantFields": {
+    "firstName": "Unauthorized",
+    "lastName": "User",
+    "email": "unauth@example.com"
+  }
+}
+
+### Create participant - Non-existent event (should return 404)
+POST {{baseUrl}}/participants
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "eventId": "00000000-0000-0000-0000-000000000000",
+  "participantFields": {
+    "firstName": "Test",
+    "lastName": "User",
+    "email": "test@example.com"
+  }
+}
+
+### Create participant - Duplicate email for same event (should return 409)
+POST {{baseUrl}}/participants
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "eventId": "replace-with-event-id",
+  "participantFields": {
+    "firstName": "Duplicate",
+    "lastName": "User",
+    "email": "john.doe@example.com"
+  }
+}
+
+################################################################################
+# 5. BULK CREATE PARTICIPANTS (Protected - ADMIN/ORGANIZER)
+################################################################################
+
+### Bulk upload participants - Valid
+POST {{baseUrl}}/participants/bulk
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "eventId": "replace-with-event-id",
+  "participants": [
+    {
+      "participantFields": {
+        "firstName": "Alice",
+        "lastName": "Smith",
+        "email": "alice.smith@example.com",
+        "phone": "+1234567891",
+        "organization": "ABC Inc",
+        "position": "Manager"
+      }
+    },
+    {
+      "participantFields": {
+        "firstName": "Bob",
+        "lastName": "Johnson",
+        "email": "bob.johnson@example.com",
+        "phone": "+1234567892",
+        "organization": "XYZ Corp",
+        "position": "Developer"
+      }
+    },
+    {
+      "participantFields": {
+        "firstName": "Carol",
+        "lastName": "Williams",
+        "email": "carol.williams@example.com",
+        "phone": "+1234567893"
+      }
+    }
+  ]
+}
+
+### Bulk upload - With some invalid entries
+POST {{baseUrl}}/participants/bulk
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "eventId": "replace-with-event-id",
+  "participants": [
+    {
+      "participantFields": {
+        "firstName": "Valid",
+        "lastName": "Entry",
+        "email": "valid@example.com"
+      }
+    },
+    {
+      "participantFields": {
+        "firstName": "Invalid",
+        "lastName": "Email",
+        "email": "not-an-email"
+      }
+    },
+    {
+      "participantFields": {
+        "firstName": "Duplicate",
+        "lastName": "Entry",
+        "email": "john.doe@example.com"
+      }
+    }
+  ]
+}
+
+### Bulk upload - Empty array (should fail validation)
+POST {{baseUrl}}/participants/bulk
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "eventId": "replace-with-event-id",
+  "participants": []
+}
+
+################################################################################
+# 6. UPDATE PARTICIPANT (Protected - ADMIN/ORGANIZER)
+################################################################################
+
+### Update participant - Valid (replace with actual ID)
+PATCH {{baseUrl}}/participants/123e4567-e89b-12d3-a456-426614174000
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "participantFields": {
+    "firstName": "John Updated"
+  },
+  "status": "CONFIRMED"
+}
+
+### Update participant - Partial update
+PATCH {{baseUrl}}/participants/123e4567-e89b-12d3-a456-426614174000
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "participantFields": {
+    "phone": "+9876543210"
+  }
+}
+
+### Update participant - Change email
+PATCH {{baseUrl}}/participants/123e4567-e89b-12d3-a456-426614174000
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "email": "newemail@example.com"
+}
+
+### Update participant - Without authentication (should return 401)
+PATCH {{baseUrl}}/participants/123e4567-e89b-12d3-a456-426614174000
+Content-Type: application/json
+
+{
+  "firstName": "Unauthorized Update"
+}
+
+### Update non-existent participant (should return 404)
+PATCH {{baseUrl}}/participants/00000000-0000-0000-0000-000000000000
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "firstName": "Non-existent"
+}
+
+################################################################################
+# 7. UPLOAD PARTICIPANT PHOTO (Protected - ADMIN/ORGANIZER)
+################################################################################
+
+### Upload photo (replace with actual ID)
+### Note: This requires multipart/form-data, use a tool like Postman or curl
+### Example curl command:
+### curl -X POST http://localhost:3000/api/participants/PARTICIPANT_ID/photo \
+###   -H "Authorization: Bearer YOUR_TOKEN" \
+###   -F "photo=@/path/to/photo.jpg"
+
+POST {{baseUrl}}/participants/123e4567-e89b-12d3-a456-426614174000/photo
+Authorization: Bearer {{accessToken}}
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="photo"; filename="participant.jpg"
+Content-Type: image/jpeg
+
+< /path/to/photo.jpg
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+################################################################################
+# 8. DELETE PARTICIPANT (Protected - ADMIN/ORGANIZER)
+################################################################################
+
+### Delete participant (replace with actual ID)
+DELETE {{baseUrl}}/participants/123e4567-e89b-12d3-a456-426614174000
+Authorization: Bearer {{accessToken}}
+
+### Delete participant - Without authentication (should return 401)
+DELETE {{baseUrl}}/participants/123e4567-e89b-12d3-a456-426614174000
+
+### Delete non-existent participant (should return 404)
+DELETE {{baseUrl}}/participants/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{accessToken}}
+
+################################################################################
+# NOTES
+################################################################################
+
+# Before testing protected routes:
+# 1. Create an account using POST /api/auth/register
+# 2. Login using POST /api/auth/login to get access token
+# 3. Replace {{accessToken}} variable at the top with your actual token
+# 4. Replace event IDs with actual IDs from your database
+
+# You can get an event ID by:
+# 1. Creating an event first using POST /api/events
+# 2. Or querying existing events with GET /api/events
+# 3. Or checking existing events with: SELECT id FROM "Event" LIMIT 1;
+
+# For photo upload, use a tool like Postman or curl:
+# curl -X POST http://localhost:3000/api/participants/PARTICIPANT_ID/photo \
+#   -H "Authorization: Bearer YOUR_TOKEN" \
+#   -F "photo=@path/to/photo.jpg"
+
+# Supported photo formats: jpg, png, gif
+# Maximum file size: 2MB

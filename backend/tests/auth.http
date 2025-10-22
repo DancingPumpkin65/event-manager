@@ -1,0 +1,100 @@
+# Test Authentication Endpoints
+
+# Base URL
+@baseUrl = http://localhost:3000
+@contentType = application/json
+
+### Health Check
+GET {{baseUrl}}/health
+
+### Register New User
+POST {{baseUrl}}/api/auth/register
+Content-Type: {{contentType}}
+
+{
+  "email": "admin@test.com",
+  "password": "Admin123",
+  "firstName": "Admin",
+  "lastName": "User"
+}
+
+### Login
+# @name login
+POST {{baseUrl}}/api/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "admin@test.com",
+  "password": "Admin123"
+}
+
+### Extract tokens from login response
+@accessToken = {{login.response.body.data.accessToken}}
+@refreshToken = {{login.response.body.data.refreshToken}}
+
+### Get Current User
+GET {{baseUrl}}/api/auth/me
+Authorization: Bearer {{accessToken}}
+
+### Change Password
+PATCH {{baseUrl}}/api/auth/password
+Authorization: Bearer {{accessToken}}
+Content-Type: {{contentType}}
+
+{
+  "currentPassword": "Admin123",
+  "newPassword": "NewAdmin123"
+}
+
+### Refresh Access Token
+POST {{baseUrl}}/api/auth/refresh
+Content-Type: {{contentType}}
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+### Logout
+POST {{baseUrl}}/api/auth/logout
+Authorization: Bearer {{accessToken}}
+
+### Register Regular User
+POST {{baseUrl}}/api/auth/register
+Content-Type: {{contentType}}
+
+{
+  "email": "user@test.com",
+  "password": "User1234",
+  "firstName": "Test",
+  "lastName": "User"
+}
+
+### Test Invalid Email
+POST {{baseUrl}}/api/auth/register
+Content-Type: {{contentType}}
+
+{
+  "email": "invalidemail",
+  "password": "Test1234"
+}
+
+### Test Weak Password
+POST {{baseUrl}}/api/auth/register
+Content-Type: {{contentType}}
+
+{
+  "email": "test@test.com",
+  "password": "weak"
+}
+
+### Test Login with Wrong Password
+POST {{baseUrl}}/api/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "admin@test.com",
+  "password": "WrongPassword123"
+}
+
+### Test Accessing Protected Route Without Token
+GET {{baseUrl}}/api/auth/me

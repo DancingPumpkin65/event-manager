@@ -1,0 +1,170 @@
+### Staff API Testing
+@baseUrl = http://localhost:3000/api
+@adminToken = your_admin_jwt_token_here
+@staffToken = your_staff_jwt_token_here
+@eventId = your_event_uuid_here
+
+################################################################################
+# 1. CREATE STAFF (Admin Only)
+################################################################################
+
+### Create Staff Member
+POST {{baseUrl}}/staff
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "eventId": "{{eventId}}",
+  "username": "alice_staff",
+  "password": "Staff123",
+  "password": "Staff123",
+  "staffFields": {
+    "firstName": "Alice",
+    "lastName": "Manager",
+    "email": "alice@event.com"
+  }
+}
+
+### Create Another Staff Member
+POST {{baseUrl}}/staff
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "eventId": "{{eventId}}",
+  "username": "bob_staff",
+  "password": "Staff456",
+  "password": "Staff456",
+  "staffFields": {
+    "firstName": "Bob",
+    "lastName": "Assistant",
+    "email": "bob@event.com"
+  }
+}
+
+################################################################################
+# 2. STAFF LOGIN (Public - No Auth Required)
+################################################################################
+
+### Staff Login
+POST {{baseUrl}}/staff/login
+Content-Type: application/json
+
+{
+  "username": "alice_staff",
+  "password": "Staff123",
+  "eventId": "{{eventId}}"
+}
+
+### Staff Login - Wrong Password (should fail)
+POST {{baseUrl}}/staff/login
+Content-Type: application/json
+
+{
+  "username": "alice_staff",
+  "password": "WrongPassword",
+  "eventId": "{{eventId}}"
+}
+
+### Staff Login - Wrong Event (should fail)
+POST {{baseUrl}}/staff/login
+Content-Type: application/json
+
+{
+  "username": "alice_staff",
+  "password": "Staff123",
+  "eventId": "00000000-0000-0000-0000-000000000000"
+}
+
+################################################################################
+# 3. GET STAFF BY EVENT (Admin Only)
+################################################################################
+
+### Get All Staff for Event
+GET {{baseUrl}}/staff/event/{{eventId}}
+Authorization: Bearer {{adminToken}}
+
+### Get Staff with Pagination
+GET {{baseUrl}}/staff/event/{{eventId}}?page=1&limit=10
+Authorization: Bearer {{adminToken}}
+
+### Get Staff with Search
+GET {{baseUrl}}/staff/event/{{eventId}}?search=alice
+Authorization: Bearer {{adminToken}}
+
+### Get Staff - Badges Printed
+GET {{baseUrl}}/staff/event/{{eventId}}?badgePrinted=true
+Authorization: Bearer {{adminToken}}
+
+### Get Staff - Badges Not Printed
+GET {{baseUrl}}/staff/event/{{eventId}}?badgePrinted=false
+Authorization: Bearer {{adminToken}}
+
+### Get Staff with Sorting
+GET {{baseUrl}}/staff/event/{{eventId}}?sortBy=firstName&order=asc
+Authorization: Bearer {{adminToken}}
+
+################################################################################
+# 4. GET STAFF BY ID (Admin Only)
+################################################################################
+
+### Get Staff by ID
+GET {{baseUrl}}/staff/{staffId}
+Authorization: Bearer {{adminToken}}
+
+################################################################################
+# 5. UPDATE STAFF (Admin Only)
+################################################################################
+
+### Update Staff Information
+PUT {{baseUrl}}/staff/{staffId}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+
+  "staffFields": {
+    "firstName": "Alice Updated"
+  }
+}
+
+### Update Staff Password
+PUT {{baseUrl}}/staff/{staffId}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "password": "NewStaff123"
+}
+
+################################################################################
+# 6. PRINT STAFF BADGE (Admin Only)
+################################################################################
+
+### Print Staff Badge
+POST {{baseUrl}}/staff/{staffId}/print-badge
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "printedBy": "admin-user-id"
+}
+
+################################################################################
+# 7. DELETE STAFF (Admin Only)
+################################################################################
+
+### Delete Staff Member
+DELETE {{baseUrl}}/staff/{staffId}
+Authorization: Bearer {{adminToken}}
+
+################################################################################
+# NOTES
+################################################################################
+# 1. Replace {{eventId}} with actual event UUID
+# 2. Replace {{adminToken}} with admin JWT token from login
+# 3. Replace {{staffToken}} with staff JWT token from staff login
+# 4. Replace {staffId} in URLs with actual staff UUID
+# 5. Staff can only login to their assigned event
+# 6. Only admins can create, update, delete staff
+# 7. Staff authentication returns event details
