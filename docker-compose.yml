@@ -1,0 +1,82 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: event-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: event_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_DB: event_db
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U event_user -d event_db" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - event-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: event-backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://event_user:${POSTGRES_PASSWORD:-changeme}@db:5432/event_db
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-production}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-dev-refresh-secret-change-in-production}
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: 3000
+      CORS_ORIGINS: https://localhost
+    volumes:
+      - ./backend/src:/app/src
+      - ./backend/prisma:/app/prisma
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - event-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: event-frontend
+    restart: unless-stopped
+    environment:
+      VITE_API_BASE_URL: https://localhost/api
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+    networks:
+      - event-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: event-nginx
+    restart: unless-stopped
+    ports:
+      - "443:443"
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - event-network
+
+volumes:
+  postgres-data:
+    driver: local
+
+networks:
+  event-network:
+    driver: bridge
