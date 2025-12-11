@@ -83,3 +83,4 @@ git clone git@github.com:name/chemin/vers/dépôt
 ---
 
 Ce résumé englobe les éléments essentiels de Git et GitLab, en fournissant une vue d'ensemble de la gestion de versions, des commandes de base, des zones de travail, et de la configuration des outils.
+<!-- Updated: 2025-12-11 -->
