@@ -255,4 +255,4 @@ This project is private and proprietary.
 
 ---
 
-Built with ❤️ for event management
+Built with love for event management
